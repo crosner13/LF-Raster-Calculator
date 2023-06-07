@@ -1,51 +1,53 @@
 
 # Libraries
-# import arcpy
 import os
-
-# Variables
-# put file folder pathways as params here
-# equation:
-'''  20.41 + 0.873 *("*_d00.tif")-1.73*("*_std.tif")-0.189*("_d01.tif")  '''
-# three input folders:
-    # Normal_d00_tif = "C:\\Users\\coler\\Documents\\ISU\\WFH\\Ladder_Fuels_3\\Normalized_Rasters\\Normal_d00.tif"
-    # Normal_d01_tif = "C:\\Users\\coler\\Documents\\ISU\\WFH\\Ladder_Fuels_3\\Normalized_Rasters\\Normal_d01.tif"
-    # Normal_std_tif = "C:\\Users\\coler\\Documents\\ISU\\WFH\\Ladder_Fuels_3\\Normalized_Rasters\\Normal_std.tif"
-
+import sys
+import arcpy
+from arcpy.sa import * # Might need the image analyst version instead
 
 # Functions 
-def matchFiles(StandardDev, COV1_8, COV4_8):
-    # Get list of matching .TIFs in each file folder 
+def getLadderFuelsRaster(PathToSTD, PathToD00, PathToD01, PathToOutLF):
     
+    # Slice to grab ID prefixes
     justIDs = slice(19)
+    rasterIDs = [file[justIDs] for file in os.listdir(PathToSTD) if file.startswith("ot_pt") and file.endswith("_normal_std.txt")]
+    arcpy.AddMessage(f"Found {len(rasterIDs)} ID prefixes.")
 
-    rasterIDs = [file[justIDs] for file in os.listdir(StandardDev) if file.startswith("ot_pt") and file.endswith("_normal_std.txt")]
-    print(rasterIDs)
+    # Grab extension
+    arcpy.CheckOutExtension("Spatial")
 
+    # This loop makes sure all three variables in the raster equation are there and performs the calculation
     for id in rasterIDs:
-        stdDev = os.path.join(StandardDev, (str(id) + "std.txt"))
-        cover1_8 = os.path.join(COV1_8, (str(id) + "d00.txt"))
-        cover4_8 = os.path.join(COV4_8, (str(id) + "d01.txt"))
+        stdDev = os.path.join(PathToSTD, (str(id) + "std.tif"))
+        cover1_8 = os.path.join(PathToD00, (str(id) + "d00.tif"))
+        cover4_8 = os.path.join(PathToD01, (str(id) + "d01.tif"))
         if os.path.exists(stdDev) and os.path.exists(cover1_8) and os.path.exists(cover4_8):
-            print(f"Input files found: {stdDev}, {cover1_8}, {cover4_8}")
-            # Continue here
-        else:
-            print(f"An input is missing for ID prefix: {id}.")
+            arcpy.AddMessage(f"Required input files found for ID prefix: {id}. Performing calculation.")
+            
+            # This block will hopefully catch errors with the raster calculation and log them to the geoprocessing window
+            try:
+                lfRaster = RasterCalculator([cover1_8, stdDev, cover4_8], ["x", "y", "z"], 
+                                            "20.41 + 0.873 * x -1.73 * y - 0.189 * z", "", "")
+                lfRaster.save(os.path.join(PathToOutLF, str(id)+ "LF.tif"))
+                arcpy.AddMessage(f"LF Raster created and saved for {id}.")
+            except arcpy.ExecuteError:
+                arcpy.AddError(arcpy.GetMessages(2))
+            except:
+                e = sys.exc_info()[1]
+                arcpy.AddError(e.args[0])
 
-def getLadderFuelsRaster():
-    pass
+        else:
+            arcpy.AddMessage(f"Skipping ID prefix: {id}. It is missing an input")
+
+        arcpy.AddMessage("Done.")
 
 if __name__ == '__main__':
     
-    '''
     std = arcpy.GetParameterAsText(0) # full path to folder containing Standard Deviation Rasters
     d00 = arcpy.GetParameterAsText(1) # full path to folder containing COV1_8 Rasters
     d01 = arcpy.GetParameterAsText(2) # full path to folder containing COV4_8 Rasters
-    '''
-    std = r"C:\Users\coler\Documents\ISU\WFH\LF3_Testing\Normalized_Rasters\Normal_std.tif"
-    d00 = r"C:\Users\coler\Documents\ISU\WFH\LF3_Testing\Normalized_Rasters\Normal_d00.tif"
-    d01 = r"C:\Users\coler\Documents\ISU\WFH\LF3_Testing\Normalized_Rasters\Normal_d01.tif"
+    outLF = arcpy.GetParameterAsText(3) # full path to folder containing output LF Rasters
 
 
-    matchFiles(StandardDev = std, COV1_8 = d00, COV4_8 = d01)
+    getLadderFuelsRaster(PathToSTD = std, PathToD00 = d00, PathToD01 = d01, PathToOutLF = outLF)
 

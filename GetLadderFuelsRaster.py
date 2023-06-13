@@ -10,7 +10,7 @@ def getLadderFuelsRaster(PathToSTD, PathToD00, PathToD01, PathToOutLF):
     
     # Slice to grab ID prefixes
     justIDs = slice(19)
-    rasterIDs = [file[justIDs] for file in os.listdir(PathToSTD) if file.startswith("ot_pt") and file.endswith("_normal_std.txt")]
+    rasterIDs = [file[justIDs] for file in os.listdir(PathToSTD) if file.startswith("ot_pt") and file.endswith("_normal_std.tif")]
     arcpy.AddMessage(f"Found {len(rasterIDs)} ID prefixes.")
 
     # Grab extension

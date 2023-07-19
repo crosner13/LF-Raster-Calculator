@@ -29,7 +29,7 @@ def getLadderFuelsRaster(PathToRasters, PathToOutLF):
         else:
             arcpy.AddMessage(f"Skipping ID prefix: {id}. It is missing an input")
 
-    arcpy.AddMessage("Done.")
+        arcpy.AddMessage("Done.")
 
 if __name__ == '__main__':
     

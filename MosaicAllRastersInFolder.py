@@ -5,7 +5,7 @@ import os
 # Functions
 def mosaicAllRastersInFolder(PathToLFRasters, MosaicRasterOutputPath):
     
-    walk = arcpy.da.Walk(top = PathToLFRasters, datatype="RasterDataset")
+    walk = arcpy.da.Walk(PathToLFRasters, datatype="RasterDataset")
 
     for dir_path, dir_names, file_names in walk:
         AllFiles = []
